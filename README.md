@@ -1,14 +1,12 @@
-# JWKS Demo (FastAPI)
+# JWKS Server (FastAPI)
 
-## Endpoints
-- `GET /jwks` → JWKS with only **unexpired** public keys (includes `kid`, `alg`, `use`).
-- `POST /auth` → Returns an **unexpired** JWT (RS256) with `kid` in header.
-- `POST /auth?expired=1` → Returns an **expired** JWT signed by the **expired** key.
+Tiny server for learning JWT/JWKS.
 
-### Why `kid`?
-Verifiers use the JWT header `kid` to pick the correct JWK from `/jwks`.
+- `GET /jwks` → returns **only unexpired** public keys (with `kid`, `alg`, `use`)
+- `POST /auth` → returns a **valid** JWT (RS256) with `kid` in the header
+- `POST /auth?expired=1` → returns an **expired** JWT signed by an expired key
 
-## Run
+## Run (local)
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
