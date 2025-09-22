@@ -12,7 +12,7 @@ class ManagedKey:
     expires_at: int  # epoch seconds
 
     def public_jwk_dict(self) -> Dict:
-        # export_public(as_dict=True) returns a dict (kty, n, e)
+        # return the PUBLIC JWK + standard fields used in JWKS/JWT
         data = self.key.export_public(as_dict=True)
         data["kid"] = self.kid
         data["alg"] = "RS256"
@@ -21,24 +21,29 @@ class ManagedKey:
 
 
 class KeyStore:
+    # in-memory store for keys (simple for this assignment)
     def __init__(self) -> None:
         self._keys: Dict[str, ManagedKey] = {}
 
+    # make a new RSA key that expires in ttl_seconds from now
     def create_active_key(self, kid: str, ttl_seconds: int) -> ManagedKey:
         k = jwk.JWK.generate(kty="RSA", size=2048, kid=kid)
         mk = ManagedKey(kid=kid, key=k, expires_at=int(time.time()) + ttl_seconds)
         self._keys[kid] = mk
         return mk
 
+    # make a new RSA key that expired seconds_ago seconds ago
     def create_expired_key(self, kid: str, seconds_ago: int = 60) -> ManagedKey:
         k = jwk.JWK.generate(kty="RSA", size=2048, kid=kid)
         mk = ManagedKey(kid=kid, key=k, expires_at=int(time.time()) - seconds_ago)
         self._keys[kid] = mk
         return mk
 
+    # look up a key by its kid (may be expired or active)
     def find_by_kid(self, kid: str) -> Optional[ManagedKey]:
         return self._keys.get(kid)
 
+    # return the latest active (unexpired) key, or None if none exist
     def get_latest_active(self) -> Optional[ManagedKey]:
         now = int(time.time())
         actives = [mk for mk in self._keys.values() if mk.expires_at > now]
@@ -46,6 +51,7 @@ class KeyStore:
             return None
         return sorted(actives, key=lambda m: m.expires_at, reverse=True)[0]
 
+    # return list of public JWK dicts for all active (unexpired) keys
     def active_public_jwks(self) -> List[Dict]:
         now = int(time.time())
         return [
